@@ -1,3 +1,8 @@
+# Docker
+
+    docker build -t nn .
+    docker run -it --rm -v "$PWD":/app nn bash
+
 # Code samples for "Neural Networks and Deep Learning"
 
 This repository contains code samples for my book on ["Neural Networks
