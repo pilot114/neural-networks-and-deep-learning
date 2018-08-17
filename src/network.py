@@ -14,16 +14,19 @@ class Network(object):
     def __init__(self, sizes):
         self.num_layers = len(sizes)
         self.sizes = sizes
-        # смещения ("предвзятости")
+        # смещения ("предвзятости") - у каждого нейрона, кроме входных
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
-        # веса
+        # веса - связи между нейронами
         self.weights = [np.random.randn(y, x) for x, y in zip(sizes[:-1], sizes[1:])]
 
     def feedforward(self, a):
+        # возвращает вывод сети если a - это вход
         for b, w in zip(self.biases, self.weights):
             a = sigmoid(np.dot(w, a)+b)
         return a
 
+    # обучение сети. training_data - кортежи из учебных входов и желаемых выводов.
+    # test_data можно передать для "самооценки" (существенно замедляет работу)
     def SGD(self, training_data, epochs, mini_batch_size, eta, test_data=None):
         if test_data: n_test = len(test_data)
         n = len(training_data)
@@ -35,11 +38,11 @@ class Network(object):
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
             if test_data:
-                print "Epoch {0}: {1} / {2}".format(
-                    j, self.evaluate(test_data), n_test)
+                print "Epoch {0}: {1} / {2}".format(j, self.evaluate(test_data), n_test)
             else:
                 print "Epoch {0} complete".format(j)
 
+    # обновление смещений и весов используя backpropagation для одной мини-партии
     def update_mini_batch(self, mini_batch, eta):
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
@@ -52,6 +55,7 @@ class Network(object):
         self.biases = [b-(eta/len(mini_batch))*nb
                        for b, nb in zip(self.biases, nabla_b)]
 
+    # самая важная часть - backpropagation
     def backprop(self, x, y):
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
@@ -65,8 +69,7 @@ class Network(object):
             activation = sigmoid(z)
             activations.append(activation)
         # backward pass
-        delta = self.cost_derivative(activations[-1], y) * \
-            sigmoid_prime(zs[-1])
+        delta = (activations[-1] - y) * sigmoid_prime(zs[-1])
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
         for l in xrange(2, self.num_layers):
@@ -77,15 +80,12 @@ class Network(object):
             nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
         return (nabla_b, nabla_w)
 
+    # возвращает кол-во тестов с правильными результатами
     def evaluate(self, test_data):
         test_results = [(np.argmax(self.feedforward(x)), y)
                         for (x, y) in test_data]
         return sum(int(x == y) for (x, y) in test_results)
 
-    def cost_derivative(self, output_activations, y):
-        return (output_activations-y)
-
-#### Miscellaneous functions
 def sigmoid(z):
     return 1.0/(1.0+np.exp(-z))
 
